@@ -8,12 +8,14 @@ class LinearModel(object):
         # define the variable theta and tensors for corresponding gradients
         # by default I will update parameters using matrix form and not gradient descent
         # Implementing normal form first
+        #
+        # parameter_dimensions = input_dim + 1 to keep the bias term
         if loss_type == "MSE":
-            self.loss = MeanSquarredError()
+            self.loss = MeanSquarredError
         self.input_dim = input_dim
         self.batch_size = batch_size
         self.update_rule = update_rule
-        self.parameters = torch.randn(self.input_dim,1,dtype=torch.float)
+        self.parameters = torch.randn(self.input_dim+1,1,dtype=torch.float)
         self.inputs = None
         self.targets = None
         self.labels = None
@@ -40,9 +42,10 @@ class LinearModel(object):
         # call calculate loss
         # keeping bias term included in self.parameters and keeping the bias terms is inputs
 
+        #Append inputs with 1 here
         self.inputs = inputs
         self.labels = labels
-        assert len(self.inputs) == 1 + self.batch_size
+        assert len(self.inputs[0]) == self.input_dim + 1
 
         self.targets = inputs.mm(self.parameters)
         self.calculate_loss()
