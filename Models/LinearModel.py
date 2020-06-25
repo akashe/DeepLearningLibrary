@@ -1,6 +1,7 @@
 from CostFunctions.MeanSquarredError import MeanSquarredError
 import torch
 import sys
+from TorchFunctions.dataModifications import appendOnes
 
 
 class LinearModel(object):
@@ -20,33 +21,37 @@ class LinearModel(object):
         self.targets = None
         self.labels = None
 
-    def calculate_loss(self):
+    def calculate_loss(self, update_parameter=True):
         # given the loss type calculate it
         # print loss value
         # call update_gradients
         loss_value = self.loss(self.labels,self.targets)
-        print("Loss value at " + str(loss_value))
-        self.update_with_gradients()
+        print(str(loss_value))
+        if update_parameter:
+            self.update_with_gradients()
 
     def update_with_gradients(self):
         # update values of parameter
         if self.update_rule == "Matrix" or self.update_rule == "Closed form":
             # parameters = (X_transpose*X)_inverse * X_transpose* Y
-            self.parameters = self.inputs.t().mm(self.inputs).inverse().mm(self.inputs.t()).mm(self.labels)
+            self.parameters = self.inputs.t().mm(self.inputs).inverse().mm(self.inputs.t()).mm(self.labels.reshape([-1,1]))
         if self.update_rule == "GD" or self.update_rule == "SGD":
             print("Not yet implemented")
             sys.exit(0)
 
-    def run(self, inputs, labels):
+    def run(self, inputs, labels, update_parameter=True):
         # calculate target values
         # call calculate loss
         # keeping bias term included in self.parameters and keeping the bias terms is inputs
 
-        #Append inputs with 1 here
         self.inputs = inputs
         self.labels = labels
+
+        # Appending inputs with 1 here
+        self.inputs = appendOnes(self.inputs)
+
         assert len(self.inputs[0]) == self.input_dim + 1
 
-        self.targets = inputs.mm(self.parameters)
-        self.calculate_loss()
+        self.targets = self.inputs.mm(self.parameters).squeeze()
+        self.calculate_loss(update_parameter)
 

@@ -5,6 +5,7 @@ import torch
 
 '''
     TODO: Add tokenizer for string values
+    TODO: Add yield for bigger files
 '''
 
 
