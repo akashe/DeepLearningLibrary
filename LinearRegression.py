@@ -1,5 +1,5 @@
 from Models.LinearModel import LinearModel
-from dataLoader.csvLoader import csvLoader
+from DataLoader.dataLoader import dataLoader
 import argparse
 
 '''
@@ -13,7 +13,7 @@ import argparse
 
 
 def main():
-    # Later shift to a config file
+    # TODO: shift to a config file
     parser = argparse.ArgumentParser()
     parser.add_argument("--filepath", help="directory containing data")
     parser.add_argument("--filename", help="file containing data")
@@ -21,13 +21,13 @@ def main():
     parser.add_argument("--batch_size", help="size of a batch")
     args = parser.parse_args()
 
-    train_x, train_y, test_x, test_y = csvLoader(args.filepath, args.filename, split_ratio=0.9,
-                                                 remove_first_column=True)
+    train_x, train_y, test_x, test_y = dataLoader(args.filepath, args.filename, split_ratio=0.9,
+                                                 remove_first_column=False)
 
     # the issue is in the split..do I do the entire thing in one Go and check test error or
     #     I make batches of it .. I think I will do it in batches of 50
 
-    linear_model = LinearModel(input_dim=len(train_x[0]), batch_size=50, loss_type="MSE", update_rule="Matrix")
+    linear_model = LinearModel(input_dim=len(train_x[0]), batch_size=args.batch_size, loss_type="MSE", update_rule="Matrix")
 
     epochs = int(args.epochs)
     batch_size = int(args.batch_size)

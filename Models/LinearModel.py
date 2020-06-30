@@ -34,7 +34,7 @@ class LinearModel(object):
         # update values of parameter
         if self.update_rule == "Matrix" or self.update_rule == "Closed form":
             # parameters = (X_transpose*X)_inverse * X_transpose* Y
-            self.parameters = self.inputs.t().mm(self.inputs).inverse().mm(self.inputs.t()).mm(self.labels.reshape([-1,1]))
+            self.parameters = (self.inputs.t().mm(self.inputs)).inverse().mm(self.inputs.t()).mm(self.labels.reshape([-1,1]))
         if self.update_rule == "GD" or self.update_rule == "SGD":
             print("Not yet implemented")
             sys.exit(0)
