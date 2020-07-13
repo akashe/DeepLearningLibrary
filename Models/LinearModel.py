@@ -2,10 +2,11 @@ from CostFunctions.MeanSquarredError import MeanSquarredError
 import torch
 import sys
 from TorchFunctions.dataModifications import appendOnes
+from Optimizers.SGD import SGD
 
 
 class LinearModel(object):
-    def __init__(self, input_dim, batch_size, loss_type, update_rule, learning_rate=0.01, regularization=None):
+    def __init__(self, input_dim, batch_size, loss_type, update_rule, learning_rate=0.001, regularization=None):
         # define the variable theta and tensors for corresponding gradients
         # by default I will update parameters using matrix form and not gradient descent
         # Implementing normal form first
@@ -14,12 +15,13 @@ class LinearModel(object):
         if loss_type == "MSE":
             self.loss = MeanSquarredError
         self.input_dim = input_dim
-        self.batch_size = batch_size
+        self.batch_size = int(batch_size)
         self.update_rule = update_rule
         self.parameters = torch.randn(self.input_dim+1,1,dtype=torch.float)
         self.inputs = None
         self.targets = None
         self.labels = None
+        self.learning_rate = learning_rate
 
     def calculate_loss(self, update_parameter=True):
         # given the loss type calculate it
@@ -36,8 +38,9 @@ class LinearModel(object):
             # parameters = (X_transpose*X)_inverse * X_transpose* Y
             self.parameters = (self.inputs.t().mm(self.inputs)).inverse().mm(self.inputs.t()).mm(self.labels.reshape([-1,1]))
         if self.update_rule == "GD" or self.update_rule == "SGD":
-            print("Not yet implemented")
-            sys.exit(0)
+            gradients = -2*self.inputs.t().mm((self.labels - self.targets).reshape([-1,1]))
+            # TODO: Come up with automatic way to calculate gradients ..this is practically cheating
+            self.parameters = SGD(self.parameters,gradients,self.learning_rate)
 
     def run(self, inputs, labels, update_parameter=True):
         # calculate target values

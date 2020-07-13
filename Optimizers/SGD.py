@@ -1,3 +1,4 @@
+import torch
 
 '''
     return values of parameters after calculating or looking up the value of the
@@ -6,3 +7,8 @@
     should I take layer/component wise approach of torch
     but for beginning maybe begin with manual gradient computation for linear and polynomial models
 '''
+
+
+def SGD(parameters, gradients, learning_rate):
+    # TODO : implement momentum
+    return parameters - learning_rate * gradients
