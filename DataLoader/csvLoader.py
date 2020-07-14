@@ -1,7 +1,5 @@
 import csv
 import os
-import random
-import torch
 
 '''
     TODO: Add tokenizer for string values

@@ -22,6 +22,8 @@ def main():
     parser.add_argument("--update_rule", help="Matrix or SGD for normal form update or stochastic gradient descent")
     parser.add_argument("--learning_rate", help="learning rate if using SGD")
     parser.add_argument("--loss_type", help="MSE or ML for mean squared error or maximum likelihood")
+    parser.add_argument("--regularization", help="L1 or L2 regularization")
+    parser.add_argument("--regularization_constant", help="regularization constant")
     args = parser.parse_args()
 
     train_x, train_y, test_x, test_y = dataLoader(args.filepath, args.filename, split_ratio=0.9,
@@ -32,7 +34,8 @@ def main():
 
     linear_model = LinearModel(input_dim=len(train_x[0]), batch_size=args.batch_size, loss_type=args.loss_type,
                                update_rule=args.update_rule,
-                               learning_rate=(float(args.learning_rate) if args.update_rule == "SGD" else 0.01))
+                               learning_rate=(float(args.learning_rate) if args.update_rule == "SGD" else 0.01),
+                               regularization=args.regularization)
 
     epochs = int(args.epochs)
     batch_size = int(args.batch_size)

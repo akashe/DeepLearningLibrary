@@ -3,6 +3,7 @@ import random
 import torch
 from .csvLoader import csvLoader
 from .xlsLoader import xlsLoader
+from .textLoader import textLoader
 import sys
 
 
@@ -11,6 +12,8 @@ def dataLoader(file_path, file_name, split_ratio=0.8, remove_first_column=False)
         X, Y = csvLoader(file_path, file_name, remove_first_column=False)
     elif file_name.endswith('.xls'):
         X, Y = xlsLoader(file_path, file_name, remove_first_column=False)
+    elif file_name.endswith('.txt'):
+        X, Y = textLoader(file_path, file_name, remove_first_column=False)
     else:
         print("File format not supported yet")
         sys.exit(1)
