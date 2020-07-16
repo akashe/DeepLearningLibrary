@@ -7,7 +7,7 @@ import os
 '''
 
 
-def csvLoader(file_path, file_name, remove_first_column=False):
+def csvLoader(file_path, file_name, remove_first_column):
     # type: (object, object, object, object) -> object
     with open(os.path.join(file_path, file_name)) as csv_file:
         csv_reader = csv.reader(csv_file)

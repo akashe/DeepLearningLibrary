@@ -17,6 +17,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--filepath", help="directory containing data")
     parser.add_argument("--filename", help="file containing data")
+    parser.add_argument("--remove_first_column", help="Remove first column of data")
     parser.add_argument("--epochs", help="total number of epochs")
     parser.add_argument("--batch_size", help="size of a batch")
     parser.add_argument("--update_rule", help="Matrix or SGD for normal form update or stochastic gradient descent")
@@ -27,7 +28,7 @@ def main():
     args = parser.parse_args()
 
     train_x, train_y, test_x, test_y = dataLoader(args.filepath, args.filename, split_ratio=0.9,
-                                                  remove_first_column=False)
+                                                  remove_first_column=args.remove_first_column)
 
     # the issue is in the split..do I do the entire thing in one Go and check test error or
     #     I make batches of it .. I think I will do it in batches of 50

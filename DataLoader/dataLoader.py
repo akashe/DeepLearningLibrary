@@ -9,11 +9,11 @@ import sys
 
 def dataLoader(file_path, file_name, split_ratio=0.8, remove_first_column=False):
     if file_name.endswith('.csv'):
-        X, Y = csvLoader(file_path, file_name, remove_first_column=False)
+        X, Y = csvLoader(file_path, file_name, remove_first_column)
     elif file_name.endswith('.xls'):
-        X, Y = xlsLoader(file_path, file_name, remove_first_column=False)
+        X, Y = xlsLoader(file_path, file_name, remove_first_column)
     elif file_name.endswith('.txt'):
-        X, Y = textLoader(file_path, file_name, remove_first_column=False)
+        X, Y = textLoader(file_path, file_name, remove_first_column)
     else:
         print("File format not supported yet")
         sys.exit(1)
@@ -28,7 +28,7 @@ def dataLoader(file_path, file_name, split_ratio=0.8, remove_first_column=False)
     test_x = []
     test_y = []
     for i, index in enumerate(a):
-        if i <= split_index:
+        if i < split_index:
             train_x.append(map(float, X[index]))
             train_y.append(float(Y[index]))
         else:
