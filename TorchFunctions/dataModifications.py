@@ -12,7 +12,6 @@ def appendOnes(tensor):
         [ 1.0000, -0.1420,  0.6311, -1.3694],
         [ 1.0000, -1.3565, -0.5244, -0.5571]])
     :param tensor: input tensor to append 1's
-    :param dim: which dimension to add 1's
     :return: tensor appended with 1's
     '''
     c = tensor.size()
@@ -23,3 +22,12 @@ def appendOnes(tensor):
     q.append(c[-1]+1)
     tensor = tensor.reshape(q)
     return tensor
+
+def normalize( t, m , s):
+    '''
+
+    :param t: tensor
+    :param m: mean
+    :param s: standard deviation
+    :return: normalized tensor
+    '''
