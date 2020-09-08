@@ -1,9 +1,6 @@
 # DeepLearningLibrary
 
-TODO(in sequence):
-implement higher degree polynomial
-implement logistic regression
-implement classification
+Using Latest pytorch nightly versions for vector jacobian products 
 
-in parallel:
-develop C++ library for matrix operations
+
+

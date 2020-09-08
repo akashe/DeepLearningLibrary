@@ -5,6 +5,7 @@ import torch
 import sys
 from TorchFunctions.dataModifications import appendOnes
 from Optimizers.SGD import SGD
+import math
 
 
 class LinearModel(object):
@@ -25,7 +26,7 @@ class LinearModel(object):
         self.regularization = regularization
         self.batch_size = int(batch_size)
         self.update_rule = update_rule
-        self.parameters = torch.randn(self.input_dim + 1, 1, dtype=torch.float)
+        self.parameters = torch.randn([self.input_dim + 1, 1], dtype=torch.float)*math.sqrt(2/(self.input_dim + 1))
         self.inputs = None
         self.targets = None
         self.labels = None

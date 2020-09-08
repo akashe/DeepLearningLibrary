@@ -41,3 +41,7 @@ def matmul(a, b):
     # sadly the fastest way to do using pytorch's matmul as of now
     # TODO: learn linear algebra subprograms to handle huge matrices
     return a.matmul(b)
+
+
+def relu(x):
+    return x.clamp_min(0.)

@@ -1,6 +1,5 @@
 import torch
 
-
 def MeanSquarredError(**kwargs):
     labels, targets, batch_size = kwargs['labels'], kwargs['targets'], kwargs['batch_size']
     return torch.sum(torch.mul((labels - targets), (labels - targets))) / batch_size
