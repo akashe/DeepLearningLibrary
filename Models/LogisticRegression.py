@@ -1,15 +1,35 @@
-from Models.LinearModel import LinearModel
-from DataLoader.dataLoader import dataLoader
 import argparse
 
-'''
-    The idea is to simply:
-    a) create a linear approximation of the data; equation of the form y = XM
-    b) first use Mean Squared Error; later go to Maximum likelihood
-    c) Calculate derivatives
-    d) train the model with gradient descent or with normal form
+from CostFunctions.MeanSquarredError import MSEloss
+from DataLoader.dataLoader import dataLoader
+from Modules.Linear import Linear
+from Modules.Relu import Relu
 
 '''
+There should be easier way to access these classes
+Create a model class
+'''
+
+
+class LogisticRegression():
+    def __init__(self, layer1dim, layer2dim, batch_size):
+        self.layer1 = Linear(layer1dim)
+        self.relu1 = Relu()
+        # Ohhh shit I see problems defining it this way
+        self.layer2 = Linear(layer2dim)
+        self.relu2 = Relu()
+        self.loss = MSEloss(batch_size)
+        self.loss_ = None
+
+    def forward(self, inputs, targets):
+        a = self.layer1(inputs)
+        b = self.relu1(a)
+        c = self.layer2(b)
+        d = self.relu2(c)
+        self.loss_ = self.loss(d, targets)
+
+    def backward(self):
+        self.loss_.backward()
 
 
 def main():
@@ -30,14 +50,7 @@ def main():
     train_x, train_y, test_x, test_y = dataLoader(args.filepath, args.filename, split_ratio=0.9,
                                                   remove_first_column=(True if args.remove_first_column=="True" else False))
 
-    # the issue is in the split..do I do the entire thing in one Go and check test error or
-    #     I make batches of it .. I think I will do it in batches of 50
-
-    linear_model = LinearModel(input_dim=len(train_x[0]), batch_size=args.batch_size, loss_type=args.loss_type,
-                               update_rule=args.update_rule,
-                               learning_rate=(float(args.learning_rate) if args.update_rule == "SGD" else 0.01),
-                               regularization=args.regularization)
-
+    model = LogisticRegression([len(train_x[0]), 10], [10, 1], int(args.batch_size))
     epochs = int(args.epochs)
     batch_size = int(args.batch_size)
     for i in range(epochs):
@@ -45,13 +58,8 @@ def main():
             start_index = batch_size * j
             end_index = batch_size * (j + 1)
             print(" Train error for epoch " + str(i) + " and batch " + str(j + 1) + " : ")
-            linear_model.run(train_x[start_index:end_index], train_y[start_index:end_index])
-
-            # checking test error
-            print(" Test error for epoch " + str(i) + " and batch " + str(j + 1) + " : ")
-            linear_model.run(test_x, test_y, update_parameter=False)
-
-    print("Akash")
+            model.forward(train_x[start_index:end_index], train_y[start_index:end_index])
+            model.backward()
 
 
 if __name__ == "__main__":

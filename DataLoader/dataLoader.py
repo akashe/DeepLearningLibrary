@@ -29,10 +29,10 @@ def dataLoader(file_path, file_name, split_ratio=0.8, remove_first_column=False)
     test_y = []
     for i, index in enumerate(a):
         if i < split_index:
-            train_x.append(map(float, X[index]))
+            train_x.append(list(map(float, X[index])))
             train_y.append(float(Y[index]))
         else:
-            test_x.append(map(float, X[index]))
+            test_x.append(list(map(float, X[index])))
             test_y.append(float(Y[index]))
 
     return torch.FloatTensor(train_x), torch.FloatTensor(train_y), torch.FloatTensor(test_x), torch.FloatTensor(test_y)

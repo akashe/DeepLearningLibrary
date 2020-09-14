@@ -17,7 +17,10 @@ def kaiming_initialization(x, mode='out'):
     '''
 
     # TODO : update for high rank tensors
-    a, b = x.shape()
+    if len(x.size()) == 2:
+        a, b = x.size()
+    if len(x.size()) == 1:
+        a = b = x.size()[0]
     if mode == 'out':
         return x * math.sqrt(2 / a)
     else:

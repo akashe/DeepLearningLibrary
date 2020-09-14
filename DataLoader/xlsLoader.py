@@ -7,14 +7,11 @@ import os
 
 def xlsLoader(file_path, file_name, remove_first_column):
     df = pd.read_excel(os.path.join(file_path, file_name))
-    if remove_first_column:
-        XY = df.values[:,1:]
-    else:
-        XY = df.values
-    # Assumption: Last row is target value
+    XY = df.values
     X = []
     Y = []
+    a = 1 if remove_first_column else 0
     for row in XY:
-        X.append(row[:-1])
+        X.append(row[a:-1])
         Y.append(row[-1])
     return X, Y

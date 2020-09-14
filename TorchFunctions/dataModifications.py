@@ -15,15 +15,16 @@ def appendOnes(tensor):
     :return: tensor appended with 1's
     '''
     c = tensor.size()
-    tensor = tensor.reshape(-1,c[-1])
+    tensor = tensor.reshape(-1, c[-1])
     b = torch.ones([tensor.size()[0], 1])
-    tensor = torch.cat([b,tensor],1)
+    tensor = torch.cat([b, tensor], 1)
     q = list(c[:-1])
-    q.append(c[-1]+1)
+    q.append(c[-1] + 1)
     tensor = tensor.reshape(q)
     return tensor
 
-def normalize( t, m , s):
+
+def normalize(t, m, s):
     '''
 
     :param t: tensor
@@ -31,3 +32,4 @@ def normalize( t, m , s):
     :param s: standard deviation
     :return: normalized tensor
     '''
+    return (t - m) / s

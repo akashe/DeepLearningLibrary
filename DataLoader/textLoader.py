@@ -7,9 +7,9 @@ def textLoader(file_path, file_name, remove_first_column):
     with open(os.path.join(file_path, file_name), "r") as f:
         X = []
         Y = []
+        a = 1 if remove_first_column else 0
         for line in f:
             line = line.strip().split("\t")
-            a = 1 if remove_first_column else 0
             X.append(line[a:-1])
             Y.append(line[-1])
     return X, Y
