@@ -196,6 +196,14 @@ class Module():
         if not self.gradients_from_output[pass_no].__contains__(None):
             # calculate gradient wrt to input and trainable params
             trainable_params = self.get_trainable_params()
+            '''
+            vjp not working here coz there is no way to send variables by reference in python
+            Other alternatives:
+            a) making a list of trainable params during init: too cumbersome for bigger archs
+            b) make computation graph around tensors and not modules : sunk cost fallacy
+            c) make custom vjp: autodiff uses numpy: too much work
+            d) ?
+            '''
             output_, gradients = vjp(self.forward, (*self.inputs[pass_no], *trainable_params),
                                      *self.gradients_from_output[pass_no])
 
