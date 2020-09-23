@@ -128,7 +128,7 @@ def get_rewards_to_go(rewards):
 
 
 def main():
-    games = 500
+    games = 2000
     test_games = 10
     D = 5
     env = gym.make('LunarLander-v2')

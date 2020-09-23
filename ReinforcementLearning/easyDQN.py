@@ -20,7 +20,8 @@ The idea is to get a feel of the algo not to extend functionality. So the implem
 For v2, the implementation uses vjp not traditional torch.backwards
 
 Questions: 
-should error signals from target network be broadcasted
+should error signals from target network be broadcasted..no I did mistake..I ignored actions
+in Q(s,a) I was subtracting Q(s) but I have to subtract for the action taken Q(s,'a')
 
 Versions and analysis:
 v1: simple linear transform
@@ -121,7 +122,7 @@ class DQNAgentv2:
                 input_ = x
         return z
 
-    def forward_for_gradients(self, W1, W2, W3, input_, target_):
+    def forward_for_gradients(self, W1, W2, W3, input_, target_,actions):
         # I know this is bloated implementation resulting in lower efficiency
         layers = [W1, W2, W3]
         for count, i_ in enumerate(layers):
@@ -132,6 +133,7 @@ class DQNAgentv2:
                 # x = z
                 input_ = x
 
+        z = z.gather(1, actions.unsqueeze(1).long())
         # loss = MeanSquarredError(labels=target_.unsqueeze(-1), targets=z, batch_size=self.batch_size)
         # try F.mse_loss and validate gradients
         loss = F.mse_loss(z,target_.unsqueeze(-1))
@@ -160,7 +162,7 @@ class DQNAgentv2:
         # Now to get gradients I will have to pass each of current networks parameter
         # to get gradients from vjp
 
-        inputs_for_gradients = (self.current_network[0], self.current_network[1], self.current_network[2], observations, target_value)
+        inputs_for_gradients = (self.current_network[0], self.current_network[1], self.current_network[2], observations, target_value,actions)
         loss, gradients = vjp(self.forward_for_gradients, inputs_for_gradients)
 
         print(" Loss for step " + str(self.step_counter) + " = " + str(loss.item()))
@@ -184,7 +186,7 @@ if __name__ == "__main__":
                        batch_size, learning_rate,
                        max_memory_size)
     # train a policy
-    total_games = 15000
+    total_games = 5000
     scores = []
     # train loop
     for i in range(total_games):
