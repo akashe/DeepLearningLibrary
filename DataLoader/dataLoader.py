@@ -4,6 +4,7 @@ import torch
 from .csvLoader import csvLoader
 from .xlsLoader import xlsLoader
 from .textLoader import textLoader
+from .gzLoader import gzLoader
 import sys
 
 
@@ -14,6 +15,8 @@ def dataLoader(file_path, file_name, split_ratio=0.8, remove_first_column=False)
         X, Y = xlsLoader(file_path, file_name, remove_first_column)
     elif file_name.endswith('.txt'):
         X, Y = textLoader(file_path, file_name, remove_first_column)
+    elif file_name.endswith('.gz'):
+        X, Y = gzLoader(file_path,file_name,remove_first_column)
     else:
         print("File format not supported yet")
         sys.exit(1)
@@ -34,5 +37,6 @@ def dataLoader(file_path, file_name, split_ratio=0.8, remove_first_column=False)
         else:
             test_x.append(list(map(float, X[index])))
             test_y.append(float(Y[index]))
+            #TODO : in classification tasks with cross entropy we dont need to make float of train_y and test_y
 
     return torch.FloatTensor(train_x), torch.FloatTensor(train_y), torch.FloatTensor(test_x), torch.FloatTensor(test_y)

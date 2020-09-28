@@ -1,9 +1,11 @@
 import argparse
 
-from CostFunctions.MeanSquarredError import MSEloss
+from CostFunctions import CrossEntropy
 from DataLoader.dataLoader import dataLoader
 from Modules.Linear import Linear
 from Modules.Relu import Relu
+from Modules.module import Module
+import torch
 
 '''
 There should be easier way to access these classes
@@ -11,15 +13,16 @@ Create a model class
 '''
 
 
-class LogisticRegression():
-    def __init__(self, layer1dim, layer2dim, batch_size):
+class LogisticClassification():
+    def __init__(self, layer1dim, layer2dim, batch_size, lr):
         self.layer1 = Linear(layer1dim)
         self.relu1 = Relu()
         # Ohhh shit I see problems defining it this way
         self.layer2 = Linear(layer2dim)
         self.relu2 = Relu()
-        self.loss = MSEloss(batch_size)
+        self.loss = CrossEntropy()
         self.loss_ = None
+        self.lr = lr
 
     def forward(self, inputs, targets):
         a = self.layer1(inputs)
@@ -27,9 +30,24 @@ class LogisticRegression():
         c = self.layer2(b)
         d = self.relu2(c)
         self.loss_ = self.loss(d, targets)
+        acc_ = (torch.argmax(d.o, dim=1) == targets.long()).float().mean()
+        print(self.loss_.o)
+        print("Accuracy ="+str(acc_))
 
     def backward(self):
-        self.loss_.backward()
+        '''
+        TODO: update this later..too inefficient
+        backward function of module class still buggy..using torch's backward in the mean
+         time
+        '''
+        self.loss_.o.backward()
+        for i in vars(self):
+            if isinstance(self.__getattribute__(i), Module):
+                self.__getattribute__(i).update_params_torch(self.lr)
+
+        for i in vars(self):
+            if isinstance(self.__getattribute__(i), Module):
+                self.__getattribute__(i).set_grad_zero()
 
 
 def main():
@@ -48,9 +66,12 @@ def main():
     args = parser.parse_args()
 
     train_x, train_y, test_x, test_y = dataLoader(args.filepath, args.filename, split_ratio=0.9,
-                                                  remove_first_column=(True if args.remove_first_column=="True" else False))
+                                                  remove_first_column=(
+                                                      True if args.remove_first_column == "True" else False))
 
-    model = LogisticRegression([len(train_x[0]), 10], [10, 1], int(args.batch_size))
+    no_of_classes = 1 + int(test_y.max().item())
+    model = LogisticClassification([len(train_x[0]), 100], [100, no_of_classes], int(args.batch_size),
+                                   float(args.learning_rate))
     epochs = int(args.epochs)
     batch_size = int(args.batch_size)
     for i in range(epochs):

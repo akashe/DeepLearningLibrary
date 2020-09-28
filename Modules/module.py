@@ -149,13 +149,28 @@ class Module():
         '''
         raise NotImplementedError
 
+    def set_grad_zero(self):
+        # TODO: check necessity of this function later
+        for i in vars(self):
+            if torch.is_tensor(self.__getattribute__(i)):
+                if self.__getattribute__(i).requires_grad:
+                    self.__getattribute__(i).grad.zero_()
+
+    def update_params_torch(self,lr):
+        # TODO: check necessity of this function later
+        for i in vars(self):
+            if torch.is_tensor(self.__getattribute__(i)):
+                if self.__getattribute__(i).requires_grad:
+                    a = self.__getattribute__(i)
+                    a.data -= lr * self.__getattribute__(i).grad
+
     def get_trainable_params(self):
         # I dont have to worry about pass by assignment coz vjp just requires param values
         # once I get gradients I can just update the params in the same order with gradient
         trainable_params = []
         for i in vars(self):
             if torch.is_tensor(self.__getattribute__(i)):
-                if self.__getattribute__(i).requires_grad == True:
+                if self.__getattribute__(i).requires_grad:
                     trainable_params.append(self.__getattribute__(i))
         return trainable_params
 
@@ -203,7 +218,8 @@ class Module():
             a) making a list of trainable params during init: too cumbersome for bigger archs
             b) make computation graph around tensors and not modules : sunk cost fallacy
             c) make custom vjp: autodiff uses numpy: too much work
-            d) ?
+            d) cython
+            e) ?
             '''
             output_, gradients = vjp(self.forward, (*self.inputs[pass_no], *trainable_params),
                                      *self.gradients_from_output[pass_no])

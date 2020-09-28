@@ -95,7 +95,7 @@ class CostFunction(Module):
                 c.pass_number = self.pass_no
                 output_node.append(c)
         except TypeError:
-            print(" Only lists or tuples of tensors allowed as output of forward()")
+            print(" Only lists or tuples of tensors or non-zero dim tensor allowed as output of forward()")
             sys.exit(1)
 
         self.inputs.append(inputs_for_forward)
