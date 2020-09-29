@@ -32,7 +32,8 @@ class LossNode():
         # if implemented need to change loop in Module.__call__
         raise NotImplementedError
 
-class CostFunction(Module):
+
+class CostFunction(Module, ABC):
     """
     It doesnt many variable from Module
     TODO : update structure of this class so as to reduce extra params

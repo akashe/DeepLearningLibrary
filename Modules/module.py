@@ -4,7 +4,7 @@ from torch.autograd.functional import vjp
 import sys
 
 
-class Node():
+class Node:
     """
     The idea behind creating this class is to keep track of
     parents of lone tensor between modules
@@ -40,7 +40,7 @@ class Node():
             self.parent.backward(v, self.output_order, self.pass_number)
 
 
-class Module():
+class Module:
     '''
     Usage constraints till now:
     1) keeping *args in forward def
@@ -65,7 +65,7 @@ class Module():
         self.gradients_from_output = []  # will have to mantain sequence here
         self.output_nodes = []
         self.gradients_for_trainable_params = []  # sum of this list will be the gradients for trainable params
-
+        self.train = True
         '''
         # Save cloned values of all tensors used in forward()???? Do I need this?? check bptt.
         # I dont need saved tensors in forward as long as I am using single loss function.
@@ -149,6 +149,9 @@ class Module():
         '''
         raise NotImplementedError
 
+    def train_(self,mode):
+        self.train = mode
+
     def set_grad_zero(self):
         # TODO: check necessity of this function later
         for i in vars(self):
@@ -158,11 +161,12 @@ class Module():
 
     def update_params_torch(self,lr):
         # TODO: check necessity of this function later
-        for i in vars(self):
-            if torch.is_tensor(self.__getattribute__(i)):
-                if self.__getattribute__(i).requires_grad:
-                    a = self.__getattribute__(i)
-                    a.data -= lr * self.__getattribute__(i).grad
+        with torch.no_grad():
+            for i in vars(self):
+                if torch.is_tensor(self.__getattribute__(i)):
+                    if self.__getattribute__(i).requires_grad:
+                        a = self.__getattribute__(i)
+                        a.data -= lr * self.__getattribute__(i).grad
 
     def get_trainable_params(self):
         # I dont have to worry about pass by assignment coz vjp just requires param values

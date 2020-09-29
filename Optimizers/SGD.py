@@ -11,4 +11,6 @@ import torch
 
 def SGD(parameters, gradients, learning_rate):
     # TODO : implement momentum
-    return parameters - learning_rate * gradients
+    with torch.no_grad():
+        parameters -= learning_rate * gradients
+    return parameters

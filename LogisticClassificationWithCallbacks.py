@@ -9,11 +9,11 @@ from Models import Model
 from Optimizers import Optimizer
 import torch
 from torch.utils.data import DataLoader
-
+from RunUtils import Runner
+from Callbacks import LossAndAccuracyCallback
 
 '''
-There should be easier way to access these classes
-Create a model class
+Main idea: to implement callbacks, their structure and 2 callbacks: lr scheduler and satistics callback
 '''
 
 
@@ -32,10 +32,7 @@ class LogisticClassification(Model, ABC):
         b = self.relu1(a)
         d = self.layer2(b)
         self.loss_ = self.loss(d, targets)
-        acc_ = (torch.argmax(d.o, dim=1) == targets.long()).float().mean()
-        print(self.loss_.o)
-        print("Accuracy ="+str(acc_))
-        return self.loss_.o
+        return self.loss_.o, d.o
 
     def backward(self):
         '''
@@ -74,18 +71,8 @@ def main():
     optim = Optimizer(model.trainable_params,float(args.learning_rate))
     epochs = int(args.epochs)
     batch_size = int(args.batch_size)
-    for i in range(epochs):
-        for j,(x,y) in enumerate(train_dl):
-            print(" Train error for epoch " + str(i) + " and batch " + str(j + 1) + " : ")
-            model.forward(x,y)
-            model.backward()
-            optim.step()
-            optim.zero_grad()
-
-        for j,(x,y) in enumerate(test_dl):
-            print(" Test error for epoch " + str(i) + " and batch " + str(j + 1) + " : ")
-            with torch.no_grad():
-                model.forward(x,y)
+    runner = Runner(model,optim,train_dl,test_dl,LossAndAccuracyCallback())
+    runner.fit(epochs)
 
 
 if __name__ == "__main__":
