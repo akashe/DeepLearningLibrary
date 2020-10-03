@@ -10,7 +10,7 @@ from Optimizers import Optimizer
 import torch
 from torch.utils.data import DataLoader
 from RunUtils import Runner
-from Callbacks import LossAndAccuracyCallback
+from Callbacks import LossAndAccuracyCallback,LrScheduler,LrRecorder,cosine_schedule
 
 '''
 Main idea: to implement callbacks, their structure and 2 callbacks: lr scheduler and satistics callback
@@ -71,7 +71,8 @@ def main():
     optim = Optimizer(model.trainable_params,float(args.learning_rate))
     epochs = int(args.epochs)
     batch_size = int(args.batch_size)
-    runner = Runner(model,optim,train_dl,test_dl,LossAndAccuracyCallback())
+    callbacks = [LossAndAccuracyCallback(),LrScheduler(cosine_schedule(float(args.learning_rate),0.001)),LrRecorder()]
+    runner = Runner(model,optim,train_dl,test_dl,callbacks)
     runner.fit(epochs)
 
 

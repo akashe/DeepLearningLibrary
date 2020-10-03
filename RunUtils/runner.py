@@ -33,7 +33,6 @@ class Runner():
         for x, y in dl:
             self.one_batch(x, y)
             if self('after_batch'): return
-        if self('after_batches'): return
 
     def fit(self, epochs):
         self.epochs = epochs
