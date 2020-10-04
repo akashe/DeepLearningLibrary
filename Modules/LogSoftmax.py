@@ -18,3 +18,5 @@ class LogSoftmax(Module, ABC):
         log(\sum_{i}{n}(e^{x_i}) = log(e^a \sum_{i}{n}e^{x_i - a}) = a + log(\sum_{i}{n}(e^{x_i -a})
         """
         return input - input.logsumexp(-1, keepdim=True)
+
+
