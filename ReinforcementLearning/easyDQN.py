@@ -154,9 +154,10 @@ class DQNAgentv2:
         # Loss = { target_value - actual_value}^2
         # Calculating target value using target_network
 
-        future_rewards = self.d * torch.max(self.forward(self.target_network, next_observations), dim=1)[
-            0] * non_terminal_state
-        target_value = rewards + future_rewards
+        with torch.no_grad():
+            future_rewards = self.d * torch.max(self.forward(self.target_network, next_observations), dim=1)[
+                0] * non_terminal_state
+            target_value = rewards + future_rewards
 
         # Calculating actual values
         # Now to get gradients I will have to pass each of current networks parameter
@@ -186,7 +187,7 @@ if __name__ == "__main__":
                        batch_size, learning_rate,
                        max_memory_size)
     # train a policy
-    total_games = 5000
+    total_games = 1000
     scores = []
     # train loop
     for i in range(total_games):

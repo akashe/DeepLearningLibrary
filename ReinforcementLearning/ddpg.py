@@ -1,4 +1,5 @@
 import collections
+import time
 
 import torch
 import gym
@@ -8,6 +9,10 @@ import random
 
 '''
 Current implementation will not work with CNN's as Qnetwork or Pnetwork
+Mistakes:
+1) no disabling cg construction while taking steps
+2) not taking care of dims while getting targets for Qnetwork
+3) zeroing grads for networks still not used resulting in error of Nonetype has no data
 '''
 
 
@@ -24,7 +29,7 @@ def create_network(dims):
     network = []
     for i, j in enumerate(dims):
         if i != len(dims) - 1:
-            network.append(torch.randn([dims[i], dims[i + 1]]))
+            network.append(torch.randn([dims[i], dims[i + 1]], requires_grad=True))
             if i < len(dims) - 2:
                 network.append(F.relu_)
 
@@ -42,14 +47,15 @@ class ReplayBuffer:
     def sample(self, size):
         # return a sample of size B
         batch = random.sample(self.buffer, size)
-        return map(torch.FloatTensor, zip(*batch))
+        return list(map(torch.FloatTensor, zip(*batch)))
 
 
 class QNetwork:
     def __init__(self, qnetwork_mid_dims, action_space, observation_space):
         qnetwork_mid_dims.append(1)
         qnetwork_mid_dims.insert(0, action_space + observation_space)
-        self.target_network = self.current_network = create_network(qnetwork_mid_dims)
+        self.target_network = create_network(qnetwork_mid_dims)
+        self.current_network = create_network(qnetwork_mid_dims)
 
     def __call__(self, network, input_):
         if network == "target":
@@ -62,8 +68,8 @@ class PNetwork:
     def __init__(self, pnetwork_mid_dims, action_space, action_space_high, action_space_low, observation_space,
                  add_noise_till):
         self.action_space = action_space
-        self.action_high = action_space_high
-        self.action_low = action_space_low
+        self.action_high = torch.FloatTensor(action_space_high)
+        self.action_low = torch.FloatTensor(action_space_low)
         self.observation_space = observation_space
         pnetwork_mid_dims.append(action_space)
         pnetwork_mid_dims.insert(0, observation_space)
@@ -73,12 +79,14 @@ class PNetwork:
         self.add_noise_till = add_noise_till
 
     def take_action(self, observation, total_steps):
-        action = forward(self.PNetwork_target, observation)
-        if total_steps <= self.add_noise_till:
-            noise = self.noise.sample()
-            action += noise
+        with torch.no_grad():
+            observation = torch.FloatTensor(observation)
+            action = forward(self.PNetwork_current, observation)
+            if total_steps <= self.add_noise_till:
+                noise = self.noise.sample()
+                action += noise
 
-        return self.clip_action(action)
+            return self.clip_action(action)
 
     def clip_action(self, action):
         if action < self.action_low: action = self.action_low
@@ -108,33 +116,33 @@ class DDPG:
     def UpdateQ(self, batch):
         s, a, r, s_, d = batch
         # Compute targets
-        a_targets = self.PNetwork_(s_, "target")
-        q_targets = self.QNetwork("target", torch.cat((s_, a_targets), -1))
-        targets = r + self.discount_factor(1 - d) * q_targets
-        logits = self.QNetwork("current", torch.cat((s, a), -1))
+        with torch.no_grad():
+            a_targets = self.PNetwork_(s_, "target")
+            q_targets = self.QNetwork("target", torch.cat((s_, a_targets), -1))
+            targets = r[:, None] + self.discount_factor * (1 - d)[:, None] * q_targets
+        logits = self.QNetwork("current", torch.cat((s, a[:, None]), -1))
         loss_ = F.mse_loss(logits, targets)
         loss_.backward()
         self.optim_step(self.QNetwork.current_network)
-        self.zero_grad()
+        self.zero_grad([self.current_network])
 
     def optim_step(self, network, max=False):
         params_ = []
         for i in network:
-            if torch.is_tensor(i):
+            if torch.is_tensor(i) and i.requires_grad == True:
                 params_.append(i)
         with torch.no_grad():
             for i in params_:
                 if max:
-                    i += self.lr * i.grad
+                    i.data += self.lr * i.grad
                 else:
-                    i -= self.lr * i.grad
+                    i.data -= self.lr * i.grad
 
-    def zero_grad(self):
+    def zero_grad(self, networks):
         # Ideally I shud have model.get_trainable_params here
-        networks = [self.PNetwork_target, self.PNetwork_current, self.current_network, self.target_network]
         for j in networks:
             for i in j:
-                if torch.is_tensor(i) and i.requires_good == True:
+                if torch.is_tensor(i) and i.requires_grad == True:
                     i.grad.data.zero_()
 
     def UpdateP(self, batch):
@@ -142,22 +150,25 @@ class DDPG:
         a = self.PNetwork_(s)
         cost_func_for_policy = torch.sum(self.QNetwork("current", torch.cat((s, a), -1))) / len(s)
         cost_func_for_policy.backward()
-        self.optim_step(self.PNetwork, max=True)
+        self.optim_step(self.PNetwork_current, max=True)
+        networks = [self.PNetwork_current, self.current_network]
+        self.zero_grad(networks)
 
     def UpdateNetworks(self):
-        for i, j in zip(self.PNetwork_target, self.PNetwork_current):
-            if torch.is_tensor(i) and torch.is_tensor(j) and i.requires_grad == True and j.requires_grad == True:
-                i.data = self.polyak * i.data + (1 - self.polyak) * j.data
+        with torch.no_grad():
+            for i, j in zip(self.PNetwork_target, self.PNetwork_current):
+                if torch.is_tensor(i) and torch.is_tensor(j) and i.requires_grad == True and j.requires_grad == True:
+                    i.data = self.polyak * i.data + (1 - self.polyak) * j.data
 
-        for i, j in zip(self.current_network, self.target_network):
-            if torch.is_tensor(i) and torch.is_tensor(j) and i.requires_grad == True and j.requires_grad == True:
-                i.data = self.polyak * i.data + (1 - self.polyak) * j.data
+            for i, j in zip(self.current_network, self.target_network):
+                if torch.is_tensor(i) and torch.is_tensor(j) and i.requires_grad == True and j.requires_grad == True:
+                    i.data = self.polyak * i.data + (1 - self.polyak) * j.data
 
     def __getattr__(self, item):
-        if hasattr(self,item):
-            return getattr(self,item)
-        elif hasattr(self.PNetwork_, item):
-            return getattr(self.PNetwork, item)
+        # if hasattr(self,item):
+        #     return getattr(self,item)
+        if hasattr(self.PNetwork_, item):
+            return getattr(self.PNetwork_, item)
         elif hasattr(self.QNetwork, item):
             return getattr(self.QNetwork, item)
         else:
@@ -168,25 +179,27 @@ def main():
     # arguments
     epochs = 100
     max_steps_per_episode = 1500
+    random_actions_till = 10000
     update_every = 50
     update_after = 1000
     batch_size = 100
     buffer_size = 10000
     polyak = 0.995
-    pnetwork_mid_dims = [10, 10]
-    qnetwork_mid_dims = [15, 10]
-    add_noise_till = 2000
+    pnetwork_mid_dims = [100, 100]
+    qnetwork_mid_dims = [150, 100]
+    add_noise_till = 30000
     discount_factor = 0.9
     lr = 0.001
     no_of_updates = 5
+    test_epochs = 1
+    test_steps = 200
 
     # Environment
     env = gym.make('MountainCarContinuous-v0')
     action_space = env.action_space.shape[0]
-    action_space_high = env.action_space.high[0]
-    action_space_low = env.action_space.low[0]
+    action_space_high = env.action_space.high
+    action_space_low = env.action_space.low
     observation_space = env.observation_space.shape[0]
-    observation = env.reset()
 
     # Agent
     agent = DDPG(pnetwork_mid_dims, qnetwork_mid_dims, action_space, action_space_high, action_space_low,
@@ -194,10 +207,15 @@ def main():
 
     total_steps = 0
     for i in range(epochs):
+        observation = env.reset()
         done = False
         j = 0
-        while done and j < max_steps_per_episode:
-            action = agent.take_action(observation, total_steps)
+        print("Training epoch " + str(i))
+        while (not done) and j < max_steps_per_episode:
+            if total_steps > random_actions_till:
+                action = agent.take_action(observation, total_steps)
+            else:
+                action = torch.FloatTensor(env.action_space.sample())
             next_observation, reward, done, _ = env.step(action)
             agent.ReplayBuffer(observation, action, reward, next_observation, done)
             observation = next_observation
@@ -211,6 +229,19 @@ def main():
 
             j += 1
             total_steps += 1
+
+    for i_ in range(test_epochs):
+        with torch.no_grad():
+            observation = env.reset()
+            done = False
+            j_=0
+            while not (done or j_ > test_steps):
+                env.render()
+                time.sleep(1e-3)
+                action = agent.take_action(observation,add_noise_till+1)
+                observation, _, done, _ = env.step(action)
+                j_+=1
+            env.close()
 
 
 if __name__ == "__main__":
