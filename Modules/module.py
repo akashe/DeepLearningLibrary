@@ -52,6 +52,10 @@ class Module:
     5) all outputs should later be used. Eg if module ouputs a,b,c; all three should later be used in other modules
     6) loss should return a tensor with non 0 dims
     7) set trainable params to explicility require grad = True
+
+    What the class module lacks:
+    1) register hooks
+    2) register buffer
     '''
 
     def __init__(self):
