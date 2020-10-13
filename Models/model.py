@@ -21,8 +21,8 @@ class Model:
 
     def train(self):
         for i in self.modules:
-            self.modules[i].train_(True)
+            self.modules[i].train()
 
     def eval(self):
         for i in self.modules:
-            self.modules[i].train_(False)
+            self.modules[i].eval()

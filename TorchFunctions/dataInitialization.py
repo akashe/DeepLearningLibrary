@@ -22,9 +22,9 @@ def kaiming_initialization(x, mode='out'):
     if len(x.size()) == 1:
         a = b = x.size()[0]
     if mode == 'out':
-        return x * math.sqrt(2 / a)
+        x.data = x.data * math.sqrt(2 / a)
     else:
-        return x * math.sqrt(2 / b)
+        x.data = x.data * math.sqrt(2 / b)
 
 
 def xavier_initialization(x):

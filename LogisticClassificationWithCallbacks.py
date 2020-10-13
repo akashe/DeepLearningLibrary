@@ -3,7 +3,7 @@ from abc import ABC
 
 from CostFunctions import CrossEntropy
 from DataLoader import get_data,Dataset
-from Modules import Linear
+from Modules import Linear,BatchNorm
 from Modules import Relu
 from Models import Model
 from Optimizers import Optimizer
@@ -14,6 +14,7 @@ from Callbacks import LossAndAccuracyCallback,LrScheduler,LrRecorder,cosine_sche
 
 '''
 Main idea: to implement callbacks, their structure and 2 callbacks: lr scheduler and satistics callback
+Also: testing batchNorm here, ideally should check it when conv2d is ready.. 
 '''
 
 
@@ -22,6 +23,7 @@ class LogisticClassification(Model, ABC):
         super().__init__()
         self.layer1 = Linear(layer1dim)
         self.relu1 = Relu()
+        self.bn1 = BatchNorm()
         # Ohhh shit I see problems defining it this way
         self.layer2 = Linear(layer2dim)
         self.loss = CrossEntropy()
@@ -30,7 +32,8 @@ class LogisticClassification(Model, ABC):
     def forward(self, inputs, targets):
         a = self.layer1(inputs)
         b = self.relu1(a)
-        d = self.layer2(b)
+        b_ = self.bn1(b)
+        d = self.layer2(b_)
         self.loss_ = self.loss(d, targets)
         return self.loss_.o, d.o
 

@@ -56,6 +56,7 @@ class Module:
     What the class module lacks:
     1) register hooks
     2) register buffer
+    3) to() to move tensors to gpu
     '''
 
     def __init__(self):
@@ -69,7 +70,7 @@ class Module:
         self.gradients_from_output = []  # will have to mantain sequence here
         self.output_nodes = []
         self.gradients_for_trainable_params = []  # sum of this list will be the gradients for trainable params
-        self.train = True
+        self.train_ = True
         '''
         # Save cloned values of all tensors used in forward()???? Do I need this?? check bptt.
         # I dont need saved tensors in forward as long as I am using single loss function.
@@ -153,8 +154,15 @@ class Module:
         '''
         raise NotImplementedError
 
-    def train_(self,mode):
-        self.train = mode
+    def train(self):
+        self.train_ = True
+
+    def eval(self):
+        self.train_ = False
+
+    def to(self):
+        # put all the tensors not just the trainable params of a module to gpu
+        pass
 
     def set_grad_zero(self):
         # TODO: check necessity of this function later
