@@ -1,4 +1,4 @@
-from .Linear import Linear
+from .Linear import Linear,LinearWithHooks
 from .LogSoftmax import LogSoftmax
 from .Relu import Relu
 from .module import Module

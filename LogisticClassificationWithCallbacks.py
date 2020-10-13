@@ -15,6 +15,12 @@ from Callbacks import LossAndAccuracyCallback,LrScheduler,LrRecorder,cosine_sche
 '''
 Main idea: to implement callbacks, their structure and 2 callbacks: lr scheduler and satistics callback
 Also: testing batchNorm here, ideally should check it when conv2d is ready.. 
+
+Experiments and results:
+1) kaiming initilization has a drastic effect on accuracy
+2) batch_norm doesnt really affect accuracies in this model,it particularly lowers it.
+3) Lr scheduling didnt have much impact
+4) higher learning rate of 0.1 gives 97% within 10 epochs
 '''
 
 
@@ -31,8 +37,8 @@ class LogisticClassification(Model, ABC):
 
     def forward(self, inputs, targets):
         a = self.layer1(inputs)
-        b = self.relu1(a)
-        b_ = self.bn1(b)
+        b = self.bn1(a)
+        b_ = self.relu1(b)
         d = self.layer2(b_)
         self.loss_ = self.loss(d, targets)
         return self.loss_.o, d.o
@@ -54,11 +60,7 @@ def main():
     parser.add_argument("--remove_first_column", help="Remove first column of data")
     parser.add_argument("--epochs", help="total number of epochs")
     parser.add_argument("--batch_size", help="size of a batch")
-    parser.add_argument("--update_rule", help="Matrix or SGD for normal form update or stochastic gradient descent")
     parser.add_argument("--learning_rate", help="learning rate if using SGD")
-    parser.add_argument("--loss_type", help="MSE or ML for mean squared error or maximum likelihood")
-    parser.add_argument("--regularization", help="L1 or L2 regularization")
-    parser.add_argument("--regularization_constant", help="regularization constant")
     args = parser.parse_args()
 
     train_x, train_y, test_x, test_y = get_data(args.filepath, args.filename)

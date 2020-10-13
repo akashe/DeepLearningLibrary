@@ -1,11 +1,14 @@
 from abc import ABC
 import torch
 from .module import Module
+from TorchFunctions.dataInitialization import kaiming_initialization
 
 
 class BatchNorm(Module, ABC):
     def __init__(self, momentum=0.9, epsilon=1e-5):
         '''
+        BatchNorm normalizes the values across a batch, so lets say a particular x value is
+        higher than normal then this becomes a prominent feature after normalization
 
         :param input_shape: shape of the form [batch,....]
         :param momentum: momentum value for running averaging
@@ -22,6 +25,7 @@ class BatchNorm(Module, ABC):
     def initialize_more_params(self, input_shape):
         with torch.no_grad():
             self.gamma.data = torch.ones(size=(1, *input_shape[1:]))
+            # kaiming_initialization(self.gamma)
             # Other option to input_shape could have been just the no of features but I want to make it general
             self.beta.data = torch.zeros(size=(1, *input_shape[1:]))
 
