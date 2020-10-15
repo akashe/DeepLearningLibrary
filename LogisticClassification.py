@@ -6,7 +6,7 @@ from DataLoader import get_data,Dataset
 from Modules import Linear
 from Modules import Relu
 from Models import Model
-from Optimizers import Optimizer
+from Optimizers import Optimizer,SGDOptimizerForModules
 import torch
 from torch.utils.data import DataLoader
 
@@ -18,21 +18,26 @@ Create a model class
 
 
 class LogisticClassification(Model, ABC):
-    def __init__(self, layer1dim, layer2dim, batch_size):
-        super().__init__()
+    def __init__(self, layer1dim, layer2dim, layer3dim,optim):
+        super().__init__(optim)
         self.layer1 = Linear(layer1dim)
         self.relu1 = Relu()
         # Ohhh shit I see problems defining it this way
         self.layer2 = Linear(layer2dim)
+        self.relu2 = Relu()
+        self.layer3 = Linear(layer3dim)
         self.loss = CrossEntropy()
         self.loss_ = None
 
     def forward(self, inputs, targets):
         a = self.layer1(inputs)
-        b = self.relu1(a)
-        d = self.layer2(b)
-        self.loss_ = self.loss(d, targets)
-        acc_ = (torch.argmax(d.o, dim=1) == targets.long()).float().mean()
+        a = self.relu1(a)
+        a = self.layer2(a)
+        a = self.relu2(a)
+        a = self.layer3(a)
+
+        self.loss_ = self.loss(a, targets)
+        acc_ = (torch.argmax(a.o, dim=1) == targets.long()).float().mean()
         print(self.loss_.o)
         print("Accuracy ="+str(acc_))
         return self.loss_.o
@@ -40,10 +45,9 @@ class LogisticClassification(Model, ABC):
     def backward(self):
         '''
         TODO: update this later..too inefficient
-        backward function of module class still buggy..using torch's backward in the mean
-         time
+        Debugging module.backward()
         '''
-        self.loss_.o.backward()
+        self.loss_.backward()
 
 
 def main():
@@ -68,10 +72,11 @@ def main():
     train_dl = DataLoader(dataset=train_ds,batch_size=int(args.batch_size))
     # a dataloader does 2 things: shuffles the data and convert values to a tensor
     test_dl = DataLoader(dataset=test_ds,batch_size=2*int(args.batch_size))
-
+    torch.autograd.set_detect_anomaly(True)
     no_of_classes = 1 + int(test_y.max().item())
-    model = LogisticClassification([len(train_x[0]), 100], [100, no_of_classes], int(args.batch_size))
-    optim = Optimizer(model.trainable_params,float(args.learning_rate))
+    # optim = Optimizer(model.trainable_params,float(args.learning_rate))
+    optim = SGDOptimizerForModules(float(args.learning_rate))
+    model = LogisticClassification([len(train_x[0]), 100], [100, 50], [50, no_of_classes], optim)
     epochs = int(args.epochs)
     batch_size = int(args.batch_size)
     for i in range(epochs):
@@ -79,8 +84,8 @@ def main():
             print(" Train error for epoch " + str(i) + " and batch " + str(j + 1) + " : ")
             model.forward(x,y)
             model.backward()
-            optim.step()
-            optim.zero_grad()
+            # optim.step()
+            # optim.zero_grad()
 
         for j,(x,y) in enumerate(test_dl):
             print(" Test error for epoch " + str(i) + " and batch " + str(j + 1) + " : ")
