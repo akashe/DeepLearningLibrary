@@ -237,7 +237,7 @@ class Module:
                 for i in range(len(self.gradients_for_trainable_params)):
                     self.gradients_for_trainable_params[i] += gradients[i]
             self.gradients_for_trainable_params_len += 1
-            if self.gradients_for_trainable_params_len == self.pass_no:
+            if self.gradients_for_trainable_params_len == self.pass_no-1:
                 self.update_parameters(self.gradients_for_trainable_params)
                 self.pass_no = 0
                 self.gradients_for_trainable_params = None
