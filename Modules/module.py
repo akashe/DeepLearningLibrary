@@ -5,6 +5,8 @@ from torch.autograd import grad
 import sys
 
 
+# TODO: speed and storage tests vs pytorch
+
 class Node:
     """
     The idea behind creating this class is to keep track of
@@ -254,7 +256,6 @@ class Module:
                 self.pass_no = 0
                 # other way wud have been to __delattr__ and then recreate params ..not sure which method is fast
 
-
     def make_tuple_for_vjp(self):
         pass
 
@@ -299,7 +300,7 @@ class Module:
             #                          *self.gradients_from_output[pass_no], create_graph=True)
 
             gradients = grad(self.outputs[pass_no], inputs_for_gradients + trainable_params,
-                             self.gradients_from_output[pass_no], only_inputs=True, retain_graph=True,
+                             self.gradients_from_output[pass_no], only_inputs=True, retain_graph=False,
                              create_graph=False)
 
             '''
