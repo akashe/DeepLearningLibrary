@@ -47,18 +47,16 @@ class Node:
 class Module:
     '''
     Usage constraints till now:
-    1) keeping *args in forward def
-    2) using class.__call__ instead of forward where we actually define forward pass
-    3) only inputs and targets can be defined as tensors. Every other transformation
+    1) using class.__call__ instead of forward where we actually define forward pass
+    2) only inputs and targets can be defined as tensors. Every other transformation
         even a simple (learnable)matrix mul or even an addition has to be done using module. All single tensors
         are untrainable
-    4) No gradients are passed to input or target tensors
-    5) All the params used in forward have to be present in the function definition.
-    6) all outputs should later be used. Eg if module ouputs a,b,c; all three should later be used in other modules
-    7) loss should return a tensor with non 0 dims
-    8) set trainable params to explicility require grad = True
-    9) Passing the optimizers to Model class or setting individual optimizer for each module
-    10) Will have to use OptimizerForModules as an optimizer, eg SGDOptimizerForModules
+    3) No gradients are passed to input or target tensors
+    4) all outputs should later be used. Eg if module ouputs a,b,c; all three should later be used in other modules
+    5) loss should return a tensor with non 0 dims
+    6) set trainable params to explicility require grad = True
+    7) Passing the optimizers to Model class or setting individual optimizer for each module
+    8) Will have to use OptimizerForModules as an optimizer, eg SGDOptimizerForModules
 
     What the class module lacks:
     1) register hooks
