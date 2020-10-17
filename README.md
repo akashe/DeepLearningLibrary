@@ -9,14 +9,13 @@ The central idea is the use of a module class. Like in most Deep learning librar
     * finds gradients with respect to input of the module
     * passes these input gradients to parents of the module
 
-This is an experimental library. The core idea of using 'modules' with above three properties is an old idea. But this old idea was somehow lost in the process of creating highly optimized libs.
-It was created as an experiment and a learning experience. It uses *pytorch* as a base. It uses torch.autograd.grad() to automatically get gradients to avoid writing a custom automatic-differentiation code or manually setting gradients in backward(). </br>
-Note: Currently, the library isn't highly optimized. With time, I will keep improving it. 
+The core idea of using 'modules' with above three properties is an old idea. But this old idea was somehow lost in the process of creating highly optimized libs. This is an experimental library. It uses *pytorch* as a base and torch.autograd.grad() to automatically get necessary gradients in a module. This avoids writing a custom automatic-differentiation code or manually calculating gradients in backward(). </br>
+Note: Currently, the library isn't highly optimized. With time, we will keep improving it. 
 
 ####How its different from pytorch?
 1. In pytorch, a single loss.backward() updates all the leaf nodes. Here,each module calculates its own gradient wrt to output. This gives higher flexibility in ways of arranging modules in different shapes instead of the traditional ways of single forward and backward pass.[Insert link to example file]
 2. Any architecture can support multiple loss functions. These errors can be backpropagated independent of each other. [Insert link to example file]
-3. Each module can have its own optimizer or different learning algorithm.
+3. Each module can have its own optimizer or different update rule.
 
 ####Usage:
 [Link to tutorial file]
