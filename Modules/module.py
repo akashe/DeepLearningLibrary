@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-from torch.autograd.functional import vjp
+from torch.autograd.functional import vjp, _autograd_grad
 from torch.autograd import grad
 import sys
 
@@ -39,6 +39,7 @@ class Node:
         if len(self.child) == len(self.outgoing_gradient):
             v = torch.stack(self.outgoing_gradient, dim=0).sum(dim=0)
             self.parent.backward(v, self.output_order, self.pass_number)
+            del self  # TODO: is this needed?
 
 
 class Module:
@@ -72,7 +73,7 @@ class Module:
         self.outputs = []
         #         self.trainable_params = [] #clone of params at that point
         self.gradients_from_output = []  # will have to mantain sequence here
-        self.output_nodes = []
+        self.output_nodes = []  # is not used ..maybe remove later
         self.gradients_for_trainable_params = None  # a moving sum of all the gradients arrived yet
         self.gradients_for_trainable_params_len = 0  # variable to track number of gradients arrived yet
         self.train_ = True
@@ -207,12 +208,10 @@ class Module:
             raise KeyError("No optimizer set for the module")
 
         params = self.get_trainable_params()
-        self.optim.step(params,gradients)
+        self.optim.step(params, gradients)
 
         # self.optim.zero_grad(params)
         # I dont need to zero_grad because grads arent getting accumulated in trainable_params.grad
-
-
 
     def prepare_gradients_for_trainable_params(self, gradients):
         '''
@@ -235,13 +234,26 @@ class Module:
                 # this will always be true as long as all the params are used for forward even in aysnc changing no
                 # of input scenarios
                 for i in range(len(self.gradients_for_trainable_params)):
-                    self.gradients_for_trainable_params[i] += gradients[i]
+                    self.gradients_for_trainable_params[i].data += gradients[i]
             self.gradients_for_trainable_params_len += 1
-            if self.gradients_for_trainable_params_len == self.pass_no-1:
+            if self.gradients_for_trainable_params_len == self.pass_no:
                 self.update_parameters(self.gradients_for_trainable_params)
-                self.pass_no = 0
+
+                # Reset Gradient params
                 self.gradients_for_trainable_params = None
                 self.gradients_for_trainable_params_len = 0
+
+                # Reset storage variables because we have applied gradients for all the passes through
+                # this module and it doesnt make sense to save old information
+                # Also resetting pass no to 0
+                self.inputs = []
+                self.outputs = []
+                self.output_nodes = []
+                self.gradients_from_output = []
+                self.parents = []
+                self.pass_no = 0
+                # other way wud have been to __delattr__ and then recreate params ..not sure which method is fast
+
 
     def make_tuple_for_vjp(self):
         pass
@@ -308,9 +320,6 @@ class Module:
             gradients_for_inputs = gradients[:len(inputs_for_gradients)]
             gradients_for_params = gradients[len(inputs_for_gradients):]
 
-            if len(gradients_for_params) != 0:
-                self.prepare_gradients_for_trainable_params(gradients_for_params)
-
             trainable_parents = [i for i in self.parents[pass_no] if isinstance(i, Node)]
 
             # call backward on parent nodes..check if parent is a tensor
@@ -320,3 +329,6 @@ class Module:
                 # not passing gradients to input variable [Remember assumption only input variables are plain
                 # tensors rest all intermediary tensors are nodes]
                 i.backward(j)
+
+            if len(gradients_for_params) != 0:
+                self.prepare_gradients_for_trainable_params(gradients_for_params)

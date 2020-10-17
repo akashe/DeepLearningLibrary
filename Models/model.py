@@ -20,7 +20,7 @@ class Model:
         if isinstance(value,Module):
             self.modules[key] = value
             self.trainable_params.extend(value.get_trainable_params())
-            if not hasattr(value,'optim'):
+            if not hasattr(value,'optim') and hasattr(self,'optim'):
                 setattr(value,'optim',self.optim)
         super().__setattr__(key,value)
 

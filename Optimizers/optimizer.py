@@ -15,7 +15,7 @@ class SGDOptimizerForModules:
     def step(self, params, grads):
         with torch.no_grad():
             for i, j in zip(params, grads):
-                i.data -= self.lr * j
+                i -= self.lr * j
 
     def zero_grad(self, params):
         with torch.no_grad():
