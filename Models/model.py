@@ -10,11 +10,10 @@ class Model:
     TODO: I dont like that entire model works with 1 optimizer. I think each module should have its own update rule/optimizer
     For now I will give each module the optimizer of the Model and an option to add optimizer for each module
     """
-    def __init__(self,optim=None):
+    def __init__(self,optim):
         self.trainable_params = []
         self.modules = {}
-        if optim is not None:
-            self.optim = optim
+        self.optim = optim
 
     def __setattr__(self, key, value):
         if isinstance(value,Module):

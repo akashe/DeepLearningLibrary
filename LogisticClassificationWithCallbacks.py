@@ -6,7 +6,7 @@ from DataLoader import get_data,Dataset
 from Modules import Linear,BatchNorm
 from Modules import Relu
 from Models import Model
-from Optimizers import Optimizer
+from Optimizers import Optimizer, SGDOptimizerForModules
 import torch
 from torch.utils.data import DataLoader
 from RunUtils import Runner
@@ -25,12 +25,11 @@ Experiments and results:
 
 
 class LogisticClassification(Model, ABC):
-    def __init__(self, layer1dim, layer2dim, batch_size):
-        super().__init__()
+    def __init__(self, layer1dim, layer2dim, optim):
+        super().__init__(optim)
         self.layer1 = Linear(layer1dim)
         self.relu1 = Relu()
         self.bn1 = BatchNorm()
-        # Ohhh shit I see problems defining it this way
         self.layer2 = Linear(layer2dim)
         self.loss = CrossEntropy()
         self.loss_ = None
@@ -44,12 +43,7 @@ class LogisticClassification(Model, ABC):
         return self.loss_.o, d.o
 
     def backward(self):
-        '''
-        TODO: update this later..too inefficient
-        backward function of module class still buggy..using torch's backward in the mean
-         time
-        '''
-        self.loss_.o.backward()
+        self.loss_.backward()
 
 
 def main():
@@ -72,12 +66,11 @@ def main():
     test_dl = DataLoader(dataset=test_ds,batch_size=2*int(args.batch_size))
 
     no_of_classes = 1 + int(test_y.max().item())
-    model = LogisticClassification([len(train_x[0]), 100], [100, no_of_classes], int(args.batch_size))
-    optim = Optimizer(model.trainable_params,float(args.learning_rate))
+    optim = SGDOptimizerForModules(float(args.learning_rate))
+    model = LogisticClassification([len(train_x[0]), 100], [100, no_of_classes], optim)
     epochs = int(args.epochs)
-    batch_size = int(args.batch_size)
     callbacks = [LossAndAccuracyCallback(),LrScheduler(cosine_schedule(float(args.learning_rate),0.001)),LrRecorder()]
-    runner = Runner(model,optim,train_dl,test_dl,callbacks)
+    runner = Runner(model,train_dl,test_dl,callbacks)
     runner.fit(epochs)
 
 

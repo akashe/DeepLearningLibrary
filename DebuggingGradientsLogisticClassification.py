@@ -7,7 +7,7 @@ from DataLoader import get_data, Dataset
 from torch.utils.data import DataLoader
 from Optimizers import Optimizer
 from Callbacks import LossAndAccuracyCallback,LrScheduler,cosine_schedule
-from RunUtils import Runner
+from RunUtils import RunnerPytorch
 from matplotlib import pyplot as plt
 import time
 
@@ -16,15 +16,15 @@ Idea: plot gradients for W's and b's in linear layer..check their mean and varia
 if becoming zeros
 Method: Simple logistic classification on MNIST. 
 Experiments: check variations in gradients with BatchNorm, kaiming_initilization
-Note: 
+Note: THIS FILE USES PYTORCH BACKWARD coz my lib has no backward_hooks
 TODO: Ideally there should be something in Model class that can scoop up the stats and later plot them with Callbacks
 """
 
 
 # TODO: make a sequential model class to avoid writing it again and again
 class LogisticClassification(Model, ABC):
-    def __init__(self, layer1dims, layer2dims, layer3dims, batch_norm=False):
-        super(LogisticClassification, self).__init__()
+    def __init__(self, layer1dims, layer2dims, layer3dims, batch_norm=False,optim=None):
+        super(LogisticClassification, self).__init__(optim)
         self.layer1 = LinearWithHooks(layer1dims)
         self.relu1 = Relu()
         self.layer2 = LinearWithHooks(layer2dims)
@@ -75,7 +75,7 @@ def main():
     model = LogisticClassification([len(train_x[0]), 100], [100, 50], [50, no_of_classes])
     optim = Optimizer(model.trainable_params, args.learning_rate)
     callbacks = [LossAndAccuracyCallback(),LrScheduler(cosine_schedule(args.learning_rate,0.01))]
-    runner = Runner(model,optim,train_dl,test_dl,callbacks)
+    runner = RunnerPytorch(model,optim,train_dl,test_dl,callbacks)
 
     runner.fit(args.epochs)
     # This is the problem with individual param hooks, will have to plot them seperately

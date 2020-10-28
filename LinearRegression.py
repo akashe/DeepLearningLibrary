@@ -9,6 +9,7 @@ import argparse
     c) Calculate derivatives
     d) train the model with gradient descent or with normal form
 
+    NOTE: This is an early file with simple matrix multiplications and no backprop
 '''
 
 

@@ -11,7 +11,6 @@ class Callback:
     begin_batch
     after_forward .. no after_loss or after_pred
     after_backward
-    after_step
     after_batch
     begin_validate
     after_epoch
@@ -23,4 +22,8 @@ class Callback:
         self.runner = runner
 
     def __getattr__(self, item): # So callbacks can access values from runner like preds and loss values
-        return getattr(self.runner, item)
+        x = getattr(self.runner, item,None)
+        if x is None:
+            return getattr(self.runner.model,item)
+        else:
+            return x

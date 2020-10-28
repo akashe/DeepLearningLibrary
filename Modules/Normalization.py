@@ -23,27 +23,28 @@ class BatchNorm(Module, ABC):
         self.beta = torch.zeros(1, requires_grad=True)
 
     def initialize_more_params(self, input_shape):
-        with torch.no_grad():
-            self.gamma.data = torch.ones(size=(1, *input_shape[1:]))
-            # kaiming_initialization(self.gamma)
-            # Other option to input_shape could have been just the no of features but I want to make it general
-            self.beta.data = torch.zeros(size=(1, *input_shape[1:]))
+
+        self.gamma.data = torch.ones(size=(1, *input_shape[1:]))
+        # kaiming_initialization(self.gamma)
+        # Other option to input_shape could have been just the no of features but I want to make it general
+        self.beta.data = torch.zeros(size=(1, *input_shape[1:]))
 
         # exponential averages
-        self.mean = torch.zeros(size=(1, *input_shape[1:]))
-        self.var = torch.ones(size=(1, *input_shape[1:]))
+        self.mean = torch.zeros(size=(1, *input_shape[1:]),requires_grad=False)
+        self.var = torch.ones(size=(1, *input_shape[1:]),requires_grad=False)
 
     def update_means_and_vars(self, input_):
-        mean_ = input_.mean(0, keepdim=True)
-        variance_ = input_.var(0, keepdim=True)
-        '''
-        Running average: 
-        self.mean = self.momentum*self.mean + (1-self.momentum)*mean_
-        using lerp_ coz it might be faster
-        '''
-        self.mean.lerp_(mean_, (1 - self.momentum))  # its the way lerp_ is defined
-        self.var.lerp_(variance_, (1 - self.momentum))
-        return mean_, variance_
+        with torch.no_grad():
+            mean_ = input_.mean(0, keepdim=True)
+            variance_ = input_.var(0, keepdim=True)
+            '''
+            Running average: 
+            self.mean = self.momentum*self.mean + (1-self.momentum)*mean_
+            using lerp_ coz it might be faster
+            '''
+            self.mean.lerp_(mean_, (1 - self.momentum))  # its the way lerp_ is defined
+            self.var.lerp_(variance_, (1 - self.momentum))
+            return mean_, variance_
 
     def forward(self, input, *args):
         if self.first_call == 0:

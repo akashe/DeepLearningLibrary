@@ -4,24 +4,19 @@ from CostFunctions.MeanSquarredError import MSEloss
 from DataLoader.dataLoader import dataLoader
 from Modules.Linear import Linear
 from Modules.Relu import Relu
-from Modules.module import Module
-
-'''
-There should be easier way to access these classes
-Create a model class
-'''
+from Models import Model
+from Optimizers import SGDOptimizerForModules
 
 
-class LogisticRegression():
-    def __init__(self, layer1dim, layer2dim, batch_size, lr):
+class LogisticRegression(Model):
+    def __init__(self, layer1dim, layer2dim, batch_size, optim):
+        super(LogisticRegression, self).__init__(optim)
         self.layer1 = Linear(layer1dim)
         self.relu1 = Relu()
-        # Ohhh shit I see problems defining it this way
         self.layer2 = Linear(layer2dim)
         self.relu2 = Relu()
         self.loss = MSEloss(batch_size)
         self.loss_ = None
-        self.lr = lr
 
     def forward(self, inputs, targets):
         a = self.layer1(inputs)
@@ -32,43 +27,30 @@ class LogisticRegression():
         print(self.loss_.o)
 
     def backward(self):
-        '''
-        TODO: update this later..too inefficient
-        backward function of module class still buggy..using torch's backward in the mean
-         time
-        '''
-        self.loss_.o.backward()
-        for i in vars(self):
-            if isinstance(self.__getattribute__(i), Module):
-                self.__getattribute__(i).update_params_torch(self.lr)
-
-        for i in vars(self):
-            if isinstance(self.__getattribute__(i), Module):
-                self.__getattribute__(i).set_grad_zero()
+        self.loss_.backward()
 
 
 def main():
-    # TODO: shift to a config file
     parser = argparse.ArgumentParser()
     parser.add_argument("--filepath", help="directory containing data")
     parser.add_argument("--filename", help="file containing data")
-    parser.add_argument("--remove_first_column", help="Remove first column of data")
-    parser.add_argument("--epochs", help="total number of epochs")
-    parser.add_argument("--batch_size", help="size of a batch")
+    parser.add_argument("--remove_first_column",type=bool, help="Remove first column of data")
+    parser.add_argument("--epochs",type=int, help="total number of epochs")
+    parser.add_argument("--batch_size",type= int, help="size of a batch")
     parser.add_argument("--update_rule", help="Matrix or SGD for normal form update or stochastic gradient descent")
-    parser.add_argument("--learning_rate", help="learning rate if using SGD")
+    parser.add_argument("--learning_rate",type=float, help="learning rate if using SGD")
     parser.add_argument("--loss_type", help="MSE or ML for mean squared error or maximum likelihood")
     parser.add_argument("--regularization", help="L1 or L2 regularization")
     parser.add_argument("--regularization_constant", help="regularization constant")
     args = parser.parse_args()
 
     train_x, train_y, test_x, test_y = dataLoader(args.filepath, args.filename, split_ratio=0.9,
-                                                  remove_first_column=(
-                                                      True if args.remove_first_column == "True" else False))
+                                                  remove_first_column=args.remove_first_column)
 
-    model = LogisticRegression([len(train_x[0]), 10], [10, 1], int(args.batch_size), float(args.learning_rate))
-    epochs = int(args.epochs)
-    batch_size = int(args.batch_size)
+    optim = SGDOptimizerForModules(args.learning_rate)
+    model = LogisticRegression([len(train_x[0]), 10], [10, 1], args.batch_size, optim)
+    epochs = args.epochs
+    batch_size = args.batch_size
     for i in range(epochs):
         for j in range(int(len(train_x) / batch_size)):
             start_index = batch_size * j
