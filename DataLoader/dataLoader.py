@@ -46,7 +46,7 @@ def dataLoader(file_path, file_name, split_ratio=0.8, remove_first_column=False)
 
 def get_data(file_path, file_name):
     """
-    #TODO : is there a better way to yield data from diectly here in a shuffled way?
+    #TODO : is there a better way to yield data from directly here in a shuffled way?
     """
     with gzip.open(os.path.join(file_path, file_name), 'rb') as f:
         ((x_train, y_train), (x_valid, y_valid), _) = pickle.load(f, encoding='latin-1')

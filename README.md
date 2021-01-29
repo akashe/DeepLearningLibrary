@@ -17,17 +17,27 @@ Note: Currently, the library isn't highly optimized. With time, we will keep imp
 2. Any architecture can support multiple loss functions. These errors can be backpropagated independent of each other. ![Image on above 2 points](https://raw.githubusercontent.com/akashe/gifsandvids/main/possible%20architectures.jpg)
 3. Each module can have its own optimizer or different update rule.
 
+
+#### Necessity:
+Current architectures have a single forward and backward pass. This library may seem like a overkill for making similar architectures. But, in future, we might be needing new forms of architecture which are more flexible. Instead of making this lib when
+the need arises, I built it while learning backprop and autograd so to be prepared for future.
+
+
 #### Usage:
 [Link to tutorial file]
 
 #### Current Gotcha's:
 1. Using class.__call__() instead of forward(): to get output of a module, call module_name(inputs) instead of module_name.forward(input)[link to a line number in tutorial file]
-2. Only inputs and targets can be defined as tensors. Even a simple matrix multiplication(with learnable params) has to be done with a module class.
-3. All outputs of Module have to be used later. Maybe as an input to other module or as a loss value.
+2. Even a simple matrix multiplication(with learnable params) has to be done with a module class. Reason: any operation in which gradients of operation's outputs are not same as operation's inputs will require Module.backward() to calculate
+   appropriate gradients for the operation's inputs.
+3. All intermediary tensors are saved inside a Node or Module class which facilitates gradient passing. Since, inputs($x$) and targets($\bar{y}$) of a model don't need gradients they can be directly used as a tensor without Node or Module class.  
+3. All outputs of Module have to be used later. Maybe as an input to other module or as a loss value. Reason: Current implementation checks (if no of children == no of gradients received from children: calculate_gradients()), if a child Node is never used and doesn't receive any gradients, it
+   would hinder gradient calculation in its parent.
 4. Loss should return a tensor with non-zero dims 
 5. All trainable params should have requires_grad= True
-6. Each module should have an optimizer. You can directly set an optimizer for the entire model(and all modules in it) or you can set different optimizer for each module.
+6. Each module should have an optimizer. You can directly set an optimizer for the entire model(and all modules in it) or you can set a different optimizer for each module.
 7. No functionality exists that can replicate register_backward_hook()
+
 
 
 

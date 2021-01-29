@@ -20,28 +20,30 @@ class Node:
     """
 
     def __init__(self, o):
-        self.parent = None
-        self.child = []
-        self.o = o
-        self.outgoing_gradient = []
-        self.output_order = None
-        self.pass_number = None
+        self.parent = None  # parent of this Node
+        self.child = [] # List of child of this Node
+        self.o = o  # The tensor saved in this Node
+        self.outgoing_gradient = [] # Gradients from the children of this Node
+        self.output_order = None # Output number. Eg. if a,b = Module.forward(input) the output order of a=0 and b=1
+        self.pass_number = None # Pass number keeps track of pass number value of the parent Module
 
     def append_child(self, n):
         self.child.append(n)
 
     def backward(self, gradient):
         # if gradients from all children have arrived then sum them and call parents backward based
-        # on ouput ordering from the parent
+        # on output ordering from the parent
         # dont need self object of the child
         assert self.o.size() == gradient.size()
         self.outgoing_gradient.append(gradient)
 
-        # Note : should I sum all these? Yes these are the directions in which these nodes affect loss
+        # Note : should I sum all these? Yes this sum comes from chain rule. Since this tensor will be used
+        # in the children without any transformation, so the total gradient for this tensor will be sum of
+        # gradients from all its children.
         if len(self.child) == len(self.outgoing_gradient):
             v = torch.stack(self.outgoing_gradient, dim=0).sum(dim=0)
             self.parent.backward(v, self.output_order, self.pass_number)
-            del self  # TODO: is this needed?
+            del self
 
 
 class Module:
@@ -51,10 +53,15 @@ class Module:
     2) only inputs and targets can be defined as tensors. Every other transformation
         even a simple (learnable)matrix mul or even an addition has to be done using module. All single tensors
         are untrainable
-    3) No gradients are passed to input or target tensors
-    4) all outputs should later be used. Eg if module ouputs a,b,c; all three should later be used in other modules
+    3) No gradients are passed to input(x) or target($\bar(y)$) tensors. All intermediary tensors are saved inside a Node
+        or Module class which facilitates gradient passing. Since, inputs($x$) and targets($\bar{y}$) of a model don't need
+        gradients they can be directly used as a tensor without Node or Module class.
+    4) all outputs should later be used. Eg if module ouputs a,b,c; all three should later be used in other modules.Reason:
+        Current implementation checks (if no of children == no of gradients received from children: calculate_gradients()),
+        if a child Node is never used and doesn't receive any gradients, it
+        would hinder gradient calculation in its parent.
     5) loss should return a tensor with non 0 dims
-    6) set trainable params to explicility require grad = True
+    6) set trainable params to explicitly require grad = True
     7) Passing the optimizers to Model class or setting individual optimizer for each module
     8) Will have to use OptimizerForModules as an optimizer, eg SGDOptimizerForModules
 
@@ -62,27 +69,35 @@ class Module:
     1) register hooks
     2) register buffer
     3) to() to move tensors to gpu
+
+    TODO: add checks for all the constraints till now.
     '''
 
     def __init__(self):
         self.pass_no = 0  # keeps track of how many times the modules is passed through
-        self.parents = []
+        self.parents = []   # parents of the Module
 
         # for each pass
         self.inputs = []  # do I need this? Yes for gradients
-        self.outputs = []
-        #         self.trainable_params = [] #clone of params at that point
-        self.gradients_from_output = []  # will have to mantain sequence here
+        self.outputs = []   # keeps track of children of the Module for each pass.
+        self.gradients_from_output = []  # tracks the gradients received from children
         self.output_nodes = []  # is not used ..maybe remove later
         self.gradients_for_trainable_params = None  # a moving sum of all the gradients arrived yet
         self.gradients_for_trainable_params_len = 0  # variable to track number of gradients arrived yet
         self.train_ = True
         '''
-        # Save cloned values of all tensors used in forward()???? Do I need this?? check bptt.
-        # I dont need saved tensors in forward as long as I am using single loss function.
+        Save cloned values of all tensors used in forward()???? Do I need this??
+        Ans: Yes and No. I dont need all the tensors used in forward, only input to that forward
+        and trainable params used in that forward
         '''
 
     def __call__(self, *input):
+        '''
+        This function processes the input. Before calling the forward function of the Module.
+        This checks whether the input is a tensor or an instance of Node class.
+        It creates list for module parents and children. It keeps track of the pass no.
+        Why? The assumption is that during different pass, a module can have different parents, which adds a flexibility to the architecture.
+        '''
         inputs_for_forward = []
         parents_ = []
         if hasattr(input, '__iter__') and not torch.is_tensor(input):
@@ -113,11 +128,11 @@ class Module:
                 print(" error : inputs should only be tensors or instances of class Node")
                 sys.exit(1)
 
-        outputs_ = self.forward(*inputs_for_forward)  # a simple trick to unlist a list
+        outputs_ = self.forward(*inputs_for_forward)
 
         output_node = []
 
-        # Outputs_should alway be a single or multiple tensor
+        # Outputs_should always be a single or multiple tensor
         try:
             if len(outputs_) and not torch.is_tensor(outputs_):
                 for j, i in enumerate(outputs_):
@@ -140,7 +155,7 @@ class Module:
         self.inputs.append(inputs_for_forward)
         self.outputs.append(outputs_)
         self.output_nodes.append(output_node)
-        self.gradients_from_output.append([None] * len(output_node))
+        self.gradients_from_output.append([None] * len(output_node)) # to keep track of gradients from children
         self.parents.append(parents_)
         self.pass_no += 1
 
@@ -149,14 +164,14 @@ class Module:
         else:
             return tuple(output_node)
 
-    def forward(self, input, *args):  # will have to pass by reference
+    def forward(self, input, *args):
         '''
         while implementing I have in child classes
         I have to keep the func def like this
         forward(input_1,input_2..input_n,*args)
         where
         input_1...input_n are the number of inputs expected
-        *args for self trainable tensors that need gradients
+        *args for other arguments
         '''
         raise NotImplementedError
 
@@ -171,14 +186,12 @@ class Module:
         pass
 
     def set_grad_zero(self):
-        # TODO: check necessity of this function later
         for i in vars(self):
             if torch.is_tensor(self.__getattribute__(i)):
                 if self.__getattribute__(i).requires_grad:
                     self.__getattribute__(i).grad.zero_()
 
     def update_params_torch(self, lr):
-        # TODO: check necessity of this function later
         with torch.no_grad():
             for i in vars(self):
                 if torch.is_tensor(self.__getattribute__(i)):
@@ -231,8 +244,9 @@ class Module:
                 self.gradients_for_trainable_params = list(gradients)
             else:
                 assert len(self.gradients_for_trainable_params) == len(gradients)
-                # this will always be true as long as all the params are used for forward even in aysnc changing no
-                # of input scenarios
+                # This here is tricky: the above statement will always be true. But what about cases when number of
+                # outputs for different pass no. Ans: Since the 'gradients' value are calculated for all trainable
+                # params, the params which weren't used will simply have their gradient as zero.
                 for i in range(len(self.gradients_for_trainable_params)):
                     self.gradients_for_trainable_params[i].data += gradients[i]
             self.gradients_for_trainable_params_len += 1
@@ -254,9 +268,6 @@ class Module:
                 self.pass_no = 0
                 # other way wud have been to __delattr__ and then recreate params ..not sure which method is fast
 
-    def make_tuple_for_vjp(self):
-        pass
-
     def backward(self, v, output_order, pass_no):
         '''
         Assumption all output nodes are later used and are involved in gradients
@@ -277,6 +288,7 @@ class Module:
             # calculate gradient wrt to input and trainable params
             trainable_params = self.get_trainable_params()
             '''
+            Legacy Comment:(kept it here for remembering mistakes)
             vjp not working here coz there is no way to send variables by reference in python
             Other alternatives:
             a) making a list of trainable params during init: too cumbersome for bigger archs
@@ -284,8 +296,8 @@ class Module:
             c) make custom vjp: autodiff uses numpy: too much work
             d) cython
             e) ?
-            Solution: VJP was failing nt because the variables weren't sent via reference but because 
-            it was creating a new copy of tensors or detaching them from the graph.
+            Solution: VJP was failing nt because the variables weren't sent via reference(all objects in python are sent
+            by reference) but because it was creating a new copy of tensors or detaching them from the graph.
             The workaround was to use grad() from torch.autograd 
             '''
 
@@ -294,9 +306,11 @@ class Module:
                 if i__.requires_grad:
                     inputs_for_gradients.append(i__)
 
+            # Legacy comment:( when I was trying VJP for gradients)
             # output_, gradients = vjp(self.forward, (*self.inputs[pass_no], *trainable_params),
             #                          *self.gradients_from_output[pass_no], create_graph=True)
 
+            # TODO: detach such that pytorch also doesnt form a big CG, which wud end up using lot of memory
             gradients = grad(self.outputs[pass_no], inputs_for_gradients + trainable_params,
                              self.gradients_from_output[pass_no], only_inputs=True, retain_graph=False,
                              create_graph=False)
@@ -312,8 +326,6 @@ class Module:
             issue in https://github.com/pytorch/pytorch/issues/32576: Sometimes the different names may refer to the
             same tensor. In such cases the gradients will comes out to be different coz for pytorch different names
             can still mean the same tensor. 
-
-            TODO: detach such that pytorch also doesnt form a big CG, which wud end up using memory
             '''
 
             gradients_for_inputs = gradients[:len(inputs_for_gradients)]

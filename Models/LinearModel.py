@@ -64,7 +64,6 @@ class LinearModel(object):
                 Also,
                 I chose my cost func as Mean Squared error so the 1/n or 1/batch_size term will end up in my gradients
                 '''
-                # TODO: Come up with automatic way to calculate gradients ..this is practically cheating
             if self.regularization == "L2":
                 gradients = -(2 / self.batch_size) * self.inputs.t().mm((self.labels - self.targets).reshape([-1, 1])) + \
                             self.regularizing_constant * self.regularizing_constant * 2 * self.parameters

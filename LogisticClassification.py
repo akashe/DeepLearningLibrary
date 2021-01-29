@@ -22,7 +22,6 @@ class LogisticClassification(Model, ABC):
         super().__init__(optim)
         self.layer1 = Linear(layer1dim)
         self.relu1 = Relu()
-        # Ohhh shit I see problems defining it this way
         self.layer2 = Linear(layer2dim)
         self.relu2 = Relu()
         self.layer3 = Linear(layer3dim)
@@ -43,10 +42,6 @@ class LogisticClassification(Model, ABC):
         return self.loss_.o
 
     def backward(self):
-        '''
-        TODO: update this later..too inefficient
-        Debugging module.backward()
-        '''
         self.loss_.backward()
 
 
@@ -84,8 +79,6 @@ def main():
             print(" Train error for epoch " + str(i) + " and batch " + str(j + 1) + " : ")
             model.forward(x,y)
             model.backward()
-            # optim.step()
-            # optim.zero_grad()
 
         for j,(x,y) in enumerate(test_dl):
             print(" Test error for epoch " + str(i) + " and batch " + str(j + 1) + " : ")
