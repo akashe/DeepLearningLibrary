@@ -24,10 +24,16 @@ the need arises, I built it while learning backprop and autograd so to be prepar
 
 
 #### Usage:
-[Link to tutorial file]
+[A simple Logistic Classification using this lib](https://github.com/akashe/DeepLearningLibrary/blob/master/LogisticClassification.py)
+
+Primer on Module and Node classes:
+1. [Node class](https://github.com/akashe/DeepLearningLibrary/blob/master/Modules/module.py#L10): Node class contains the output tensors of the forward function of Module object. It also contains
+other information like the children Modules(i.e. Module objects that use the above output values). A Node acts as a connection between different Modules and facilitates gradient flow.
+2. [Module class](https://github.com/akashe/DeepLearningLibrary/blob/master/Modules/module.py#L49): Module class is the backbone of this lib. Its main function is to calculate gradients of inputs and trainable params wrt outputs.
+To do it keeps track of parent and child Nodes, it keeps track of the gradients it received till now, it creates Node objects for the outputs of the forward function. 
 
 #### Current Gotcha's:
-1. Using class.__call__() instead of forward(): to get output of a module, call module_name(inputs) instead of module_name.forward(input)[link to a line number in tutorial file]
+1. Using class.__call__() instead of forward(): to get output of a module, call module_name(inputs) instead of module_name.forward(input). [Example](https://github.com/akashe/DeepLearningLibrary/blob/master/LogisticClassification.py#L32)
 2. Even a simple matrix multiplication(with learnable params) has to be done with a module class. Reason: any operation in which gradients of operation's outputs are not same as operation's inputs will require Module.backward() to calculate
    appropriate gradients for the operation's inputs.
 3. All intermediary tensors are saved inside a Node or Module class which facilitates gradient passing. Since, inputs($x$) and targets($\bar{y}$) of a model don't need gradients they can be directly used as a tensor without Node or Module class.  

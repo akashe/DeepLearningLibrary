@@ -35,6 +35,7 @@ class LossNode():
 
 class CostFunction(Module, ABC):
     """
+    Only difference from a Module is that output of CosFunction object is a LossNode instead of a Node.
     It doesnt many variable from Module
     TODO : update structure of this class so as to reduce extra params
     Also I am creating one extra Node while doing forward for this class
